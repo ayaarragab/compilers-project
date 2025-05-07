@@ -1,0 +1,48 @@
+Program
+Division Calculator {
+    Ire add(Ire a, Ire b) {
+        Replywith a + b;
+    }
+    
+    Ire subtract(Ire a, Ire b) {
+        Replywith a - b;
+    }
+    
+    Ire multiply(Ire a, Ire b) {
+        Replywith a * b;
+    }
+    
+    FBU divide(Ire a, Ire b) {
+        WhetherDo (b == 0) {
+            write("Error: Division by zero");
+            Replywith 0;
+        }
+        Replywith a / b;
+    }
+    
+    None main() {
+        Ire x, y, result;
+        
+        write("Enter two numbers:");
+        read(x);
+        read(y);
+        
+        result = add(x, y);
+        write("Sum: ");
+        write(result);
+        
+        result = subtract(x, y);
+        write("Difference: ");
+        write(result);
+        
+        result = multiply(x, y);
+        write("Product: ");
+        write(result);
+        
+        FBU quotient;
+        quotient = divide(x, y);
+        write("Quotient: ");
+        write(quotient);
+    }
+}
+End

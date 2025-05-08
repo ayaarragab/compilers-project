@@ -7,8 +7,8 @@ public class Keyword {
 
         keywords.put("Division", "Class");
         keywords.put("InferedFrom", "Inheritance");
-        keywords.put("WhetherDo–Else", "Condition");
-        keywords.put("Ire", "Integer");
+        keywords.put("WhetherDo", "Condition"); // Add WhetherDo
+        keywords.put("WhetherDo–Else", "Condition"); // Keep for compatibility        keywords.put("Ire", "Integer");
         keywords.put("Sire", "SInteger");
         keywords.put("Clo", "Character");
         keywords.put("SetOfClo", "String");
@@ -25,7 +25,8 @@ public class Keyword {
         keywords.put("Program", "Stat");
         keywords.put("End", "End");
         keywords.put("Using", "Inclusion");
-
+        keywords.put("write", "Identifier"); // Explicitly add write as Identifier
+        keywords.put("read", "Identifier"); // Explicitly add read as Identifier
 
         keywords.put("+", "Arithmetic Operation");
         keywords.put("-", "Arithmetic Operation");
@@ -40,6 +41,8 @@ public class Keyword {
         keywords.put("&&", "Logic operators");
         keywords.put("||", "Logic operators");
         keywords.put("~", "Logic operators");
+        keywords.put("and", "Logic operators");
+        keywords.put("or", "Logic operators");
         keywords.put("=", "Assignment operator");
         keywords.put(":", "Assignment operator");
         keywords.put(".", " Dot ACCESS");
@@ -63,7 +66,7 @@ public class Keyword {
     }
 
     public static String getTokenType(String word) {
-        return keywords.getOrDefault(word, "IDENTIFIER");
+        return keywords.getOrDefault(word, "Identifier"); // Use "Identifier" instead of "IDENTIFIER"
     }
 }
 

@@ -13,7 +13,7 @@ public class Scannar {
     }
 
     String[] keywords = {
-            "true", "false",
+        "true", "false", "and", "or"
     };
 
     private boolean isIdentifier(String word) {
@@ -29,11 +29,11 @@ public class Scannar {
     }
 
     private boolean isConstant(String word) {
-        if (word.matches("[0-9]+"))
+        if (word.matches("[0-9]+")) // Numbers
             return true;
-        if (word.matches("'[A-Za-z]'"))
+        if (word.matches("'[A-Za-z]'")) // Single characters
             return true;
-        if (word.matches("\".*\""))
+        if (word.matches("\".*\"")) // String literals
             return true;
         for (String keyword : keywords) {
             if (word.equals(keyword)) {
@@ -46,7 +46,7 @@ public class Scannar {
     private boolean isKeyword(String word) {
         for (String keyword : keywords) {
             if (word.equals(keyword)) {
-                return false;
+                return true; // Recognize 'and' and 'or' as keywords
             }
         }
         return Keyword.isKeyword(word);
@@ -80,7 +80,7 @@ public class Scannar {
         for (Token token : tokens) {
             System.out.println(token);
         }
-        System.out.printf("Total NO of errors: %d", totalErrors);
+        System.out.printf("Total NO of errors: %d\n", totalErrors);
     }
 
     private void processLine(String line, int lineNumber) {
@@ -136,18 +136,29 @@ public class Scannar {
     private List<String> tokenizeLine(String line) {
         List<String> tokens = new ArrayList<>();
         StringBuilder current = new StringBuilder();
-
+        boolean inString = false;
+    
         for (int i = 0; i < line.length(); i++) {
             char ch = line.charAt(i);
-
-            if (Character.isLetterOrDigit(ch) || ch == '_' || ch == '–' || ch == '"' || ch == '\'' || ch == '/') {
+    
+            if (ch == '"' && !inString) {
+                inString = true;
+                current.append(ch);
+            } else if (ch == '"' && inString) {
+                inString = false;
+                current.append(ch);
+                tokens.add(current.toString());
+                current.setLength(0);
+            } else if (inString) {
+                current.append(ch);
+            } else if (Character.isLetterOrDigit(ch) || ch == '_' || ch == '–' || ch == '/') {
                 current.append(ch);
             } else {
                 if (current.length() > 0) {
                     tokens.add(current.toString());
                     current.setLength(0);
                 }
-
+    
                 if (!Character.isWhitespace(ch)) {
                     // Check for multi-character operators like ==, >=, etc.
                     if ((ch == '=' || ch == '!' || ch == '<' || ch == '>') && i + 1 < line.length()
@@ -163,12 +174,11 @@ public class Scannar {
                 }
             }
         }
-
+    
         if (current.length() > 0) {
             tokens.add(current.toString());
         }
-
+    
         return tokens;
     }
-
 }

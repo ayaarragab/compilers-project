@@ -85,16 +85,13 @@ public class Parser {
             addErrorResult("Expected 'Program' statement");
         }
     }
-
     // 2. ClassDeclarationList → ClassDeclaration ClassDeclarationList | ε
     private void classDeclarationList() {
-        if (currentTokenIndex < tokens.size() && currentToken.getText().equals("Division")) {
+        while (currentTokenIndex < tokens.size() && currentToken.getText().equals("Division")) {
             classDeclaration();
-            classDeclarationList();
         }
-        // ε case - do nothing
+        // ε case - do nothing if no more Division tokens
     }
-
     // 3. ClassDeclaration → Division ID { ClassImplementation }
     //                        | Division ID InferredFrom { ClassImplementation }
     private void classDeclaration() {
@@ -143,77 +140,103 @@ public class Parser {
     // 5. ClassItem → VarDeclaration | MethodDeclaration | Comment | UsingCommand | FuncCall
     private void classItem() {
         if (isType(currentToken.getText())) {
-            varDeclaration();
+            // Could be VarDeclaration or MethodDeclaration
+            int savedTokenIndex = currentTokenIndex;
+            Token savedToken = currentToken;
+            advance(); // Consume type
+            if (currentToken.getType().equals("Identifier")) {
+                advance(); // Consume ID
+                if (currentToken.getText().equals("(")) {
+                    // It's a MethodDeclaration
+                    currentTokenIndex = savedTokenIndex;
+                    currentToken = savedToken;
+                    methodDeclaration();
+                } else {
+                    // It's a VarDeclaration
+                    currentTokenIndex = savedTokenIndex;
+                    currentToken = savedToken;
+                    varDeclaration();
+                }
+            } else {
+                currentTokenIndex = savedTokenIndex;
+                currentToken = savedToken;
+                addErrorResult("Expected identifier after type");
+            }
         } else if (currentToken.getText().equals("/##") || currentToken.getText().equals("/-")) {
             comment();
         } else if (currentToken.getText().equals("using")) {
             usingCommand();
         } else if (currentToken.getType().equals("Identifier")) {
-            // Could be a method declaration or a function call
-            // Need to lookahead to determine which one
+            // Could be a FuncCall
             int savedTokenIndex = currentTokenIndex;
             Token savedToken = currentToken;
-            
             advance(); // Consume ID
-            if (currentTokenIndex < tokens.size() && currentToken.getText().equals("(")) {
-                // Reset to check if it's a method declaration
-                currentTokenIndex = savedTokenIndex;
-                currentToken = savedToken;
-                methodDeclaration();
-            } else {
-                // Reset for funcCall
+            if (currentToken.getText().equals("(")) {
                 currentTokenIndex = savedTokenIndex;
                 currentToken = savedToken;
                 funcCall();
+            } else {
+                currentTokenIndex = savedTokenIndex;
+                currentToken = savedToken;
+                addErrorResult("Invalid class item");
+                advance(); // Skip to avoid infinite loop
             }
         } else {
             addErrorResult("Invalid class item");
-            advance(); // Skip current token to avoid infinite loop
+            advance(); // Skip to avoid infinite loop
         }
     }
-
     // 6. MethodDeclaration → FuncDecl ; | FuncDecl { VarDeclaration Statements }
     private void methodDeclaration() {
-        funcDecl();
-        if (matchText(";")) {
-            addMatchResult("MethodDeclaration");
-        } else if (matchText("{")) {
-            varDeclaration();
-            statements();
-            if (matchText("}")) {
+        int savedTokenIndex = currentTokenIndex;
+        Token savedToken = currentToken;
+    
+        if (funcDecl()) {
+            if (matchText(";")) {
                 addMatchResult("MethodDeclaration");
+            } else if (matchText("{")) {
+                varDeclaration(); // Optional variable declarations
+                statements(); // Statements inside the block
+                if (matchText("}")) {
+                    addMatchResult("MethodDeclaration");
+                } else {
+                    addErrorResult("Expected '}' after method body");
+                }
             } else {
-                addErrorResult("Expected '}'");
+                addErrorResult("Expected ';' or '{' after function declaration");
             }
         } else {
-            addErrorResult("Expected ';' or '{' after function declaration");
+            // Reset token index if funcDecl fails to avoid consuming incorrect tokens
+            currentTokenIndex = savedTokenIndex;
+            currentToken = savedToken;
+            addErrorResult("Invalid method declaration");
         }
     }
-
     // 7. FuncDecl → Type ID ( ParameterList )
-    private void funcDecl() {
+    private boolean funcDecl() {
         if (isType(currentToken.getText())) {
+            String type = currentToken.getText();
             advance(); // Consume type
             if (currentToken.getType().equals("Identifier")) {
                 advance(); // Consume ID
                 if (matchText("(")) {
                     parameterList();
                     if (matchText(")")) {
-                        // Function declaration successfully parsed
+                        return true; // Function declaration successfully parsed
                     } else {
-                        addErrorResult("Expected ')'");
+                        addErrorResult("Expected ')' in function declaration");
                     }
                 } else {
-                    addErrorResult("Expected '('");
+                    addErrorResult("Expected '(' in function declaration");
                 }
             } else {
-                addErrorResult("Expected identifier");
+                addErrorResult("Expected identifier in function declaration");
             }
         } else {
             addErrorResult("'" + currentToken.getText() + "' is not a valid Type");
         }
+        return false;
     }
-
     // 8. Type → Ire | Sire | Clo | SetOfClo | FBU | SFBU | None | Logical
     private boolean isType(String text) {
         return text.equals("Ire") || text.equals("Sire") || text.equals("Clo") || 
@@ -292,9 +315,10 @@ public class Parser {
     //                 ContinueWhenStatement | ReplyWithStatement | TerminateThisStatement |
     //                 read ( ID ) ; | write ( Expression ) ;
     private void statement() {
-        if (isType(currentToken.getText())) {
-            assignment();
-        } else if (currentToken.getText().equals("WhetherDo")) {
+        int savedTokenIndex = currentTokenIndex;
+        Token savedToken = currentToken;
+    
+        if (currentToken.getText().equals("WhetherDo")) {
             whetherDoStatement();
         } else if (currentToken.getText().equals("Rotatewhen")) {
             rotateWhenStatement();
@@ -304,97 +328,153 @@ public class Parser {
             replyWithStatement();
         } else if (currentToken.getText().equals("terminatethis")) {
             terminateThisStatement();
-        } else if (currentToken.getText().equals("read")) {
-            advance(); // Consume 'read'
-            if (matchText("(")) {
-                if (currentToken.getType().equals("Identifier")) {
-                    advance(); // Consume ID
-                    if (matchText(")")) {
-                        if (matchText(";")) {
-                            // Read statement successfully parsed
-                        } else {
-                            addErrorResult("Expected ';'");
-                        }
-                    } else {
-                        addErrorResult("Expected ')'");
-                    }
-                } else {
-                    addErrorResult("Expected identifier in read statement");
-                }
+        } else if (currentToken.getText().equals("write") || currentToken.getText().equals("read")) {
+            funcCall(); // Treat write/read as function calls
+            if (matchText(";")) {
+                addMatchResult("Statement");
             } else {
-                addErrorResult("Expected '('");
+                addErrorResult("Expected ';' after write/read statement");
+                skipToNextStatement();
             }
-        } else if (currentToken.getText().equals("write")) {
-            advance(); // Consume 'write'
-            if (matchText("(")) {
-                expression();
-                if (matchText(")")) {
-                    if (matchText(";")) {
-                        // Write statement successfully parsed
-                    } else {
-                        addErrorResult("Expected ';'");
-                    }
+        } else if (currentToken.getType().equals("Identifier")) {
+            advance(); // Consume ID
+            if (currentToken.getText().equals("=")) {
+                // It's an Assignment
+                currentTokenIndex = savedTokenIndex;
+                currentToken = savedToken;
+                assignment();
+            } else if (currentToken.getText().equals("(")) {
+                // It's a FuncCall
+                currentTokenIndex = savedTokenIndex;
+                currentToken = savedToken;
+                funcCall();
+                if (matchText(";")) {
+                    addMatchResult("Statement");
                 } else {
-                    addErrorResult("Expected ')'");
+                    addErrorResult("Expected ';' after function call");
+                    skipToNextStatement();
                 }
             } else {
-                addErrorResult("Expected '('");
+                currentTokenIndex = savedTokenIndex;
+                currentToken = savedToken;
+                addErrorResult("Invalid statement");
+                skipToNextStatement();
+            }
+        } else if (isType(currentToken.getText())) {
+            advance(); // Consume type
+            if (currentToken.getType().equals("Identifier")) {
+                advance(); // Consume ID
+                if (currentToken.getText().equals("=")) {
+                    // It's an Assignment
+                    currentTokenIndex = savedTokenIndex;
+                    currentToken = savedToken;
+                    assignment();
+                } else {
+                    // It's a VarDeclaration
+                    currentTokenIndex = savedTokenIndex;
+                    currentToken = savedToken;
+                    varDeclaration();
+                }
+            } else {
+                currentTokenIndex = savedTokenIndex;
+                currentToken = savedToken;
+                addErrorResult("Expected identifier after type");
+                skipToNextStatement();
             }
         } else {
             addErrorResult("Invalid statement");
-            advance(); // Skip current token to avoid infinite loop
+            skipToNextStatement();
         }
     }
-
+    
     // 15. Assignment → VarDeclaration = Expression ;
     private void assignment() {
-        varDeclaration();
-        if (matchText("=")) {
-            expression();
-            if (matchText(";")) {
-                addMatchResult("Assignment");
+        int savedTokenIndex = currentTokenIndex;
+        Token savedToken = currentToken;
+    
+        if (currentToken.getType().equals("Identifier")) {
+            advance(); // Consume ID
+            if (matchText("=")) {
+                expression(); // Parse Expression, which can include FuncCall
+                if (matchText(";")) {
+                    addMatchResult("Assignment");
+                } else {
+                    addErrorResult("Expected ';' after assignment");
+                    skipToNextStatement();
+                }
             } else {
-                addErrorResult("Expected ';' after assignment");
+                addErrorResult("Expected '=' in assignment");
+                currentTokenIndex = savedTokenIndex;
+                currentToken = savedToken;
+            }
+        } else if (isType(currentToken.getText())) {
+            varDeclaration();
+            if (currentToken.getText().equals("=")) {
+                advance(); // Consume '='
+                expression();
+                if (matchText(";")) {
+                    addMatchResult("Assignment");
+                } else {
+                    addErrorResult("Expected ';' after assignment");
+                    skipToNextStatement();
+                }
+            } else {
+                // VarDeclaration without assignment is valid
+                currentTokenIndex = savedTokenIndex;
+                currentToken = savedToken;
+                varDeclaration();
             }
         } else {
-            addErrorResult("Expected '=' in assignment");
+            addErrorResult("Expected identifier or type for assignment");
+            skipToNextStatement();
         }
     }
-
-    // 16. FuncCall → ID ( ArgumentList ) ;
+    
+    private void skipToNextStatement() {
+        while (currentTokenIndex < tokens.size() && 
+               !currentToken.getText().equals(";") && 
+               !currentToken.getText().equals("}") && 
+               !currentToken.getText().equals("{")) {
+            advance();
+        }
+        if (currentTokenIndex < tokens.size() && currentToken.getText().equals(";")) {
+            advance(); // Consume semicolon
+        }
+    }
+    // 16. FuncCall → ID ( ArgumentList ) ;    
     private void funcCall() {
         if (currentToken.getType().equals("Identifier")) {
             advance(); // Consume ID
             if (matchText("(")) {
                 argumentList();
                 if (matchText(")")) {
-                    if (matchText(";")) {
-                        addMatchResult("FuncCall");
-                    } else {
-                        addErrorResult("Expected ';' after function call");
-                    }
+                    addMatchResult("FuncCall");
                 } else {
-                    addErrorResult("Expected ')'");
+                    addErrorResult("Expected ')' in function call");
+                    skipToNextStatement();
                 }
             } else {
-                addErrorResult("Expected '('");
+                addErrorResult("Expected '(' in function call");
+                skipToNextStatement();
             }
         } else {
             addErrorResult("Expected identifier for function call");
+            skipToNextStatement();
         }
     }
-
     // 17. ArgumentList → ε | NonEmptyArgumentList
     private void argumentList() {
-        if (currentTokenIndex < tokens.size() && 
-            (currentToken.getType().equals("Identifier") || 
-             currentToken.getType().equals("Constant"))) {
-            nonEmptyArgumentList();
+        if (currentTokenIndex < tokens.size() && !currentToken.getText().equals(")")) {
+            expression();
+            while (currentTokenIndex < tokens.size() && currentToken.getText().equals(",")) {
+                advance(); // Consume ','
+                expression();
+            }
         }
-        // ε case - do nothing
+        // ε case - do nothing if empty
     }
-
     // 18. NonEmptyArgumentList → Expression | NonEmptyArgumentList , Expression
+    
     private void nonEmptyArgumentList() {
         expression();
         if (currentTokenIndex < tokens.size() && currentToken.getText().equals(",")) {
@@ -419,23 +499,36 @@ public class Parser {
 
     // 20. WhetherDoStatement → WhetherDo ( ConditionExpression ) BlockStatements
     private void whetherDoStatement() {
-        if (matchText("WhetherDo")) {
+        if (currentToken.getText().equals("WhetherDo")) {
+            advance(); // Consume 'WhetherDo'
             if (matchText("(")) {
-                conditionExpression();
+                condition();
                 if (matchText(")")) {
-                    blockStatements();
-                    addMatchResult("WhetherDoStatement");
+                    if (matchText("{")) {
+                        statements();
+                        if (matchText("}")) {
+                            addMatchResult("WhetherDoStatement");
+                        } else {
+                            addErrorResult("Expected '}' after WhetherDo block");
+                            skipToNextStatement();
+                        }
+                    } else {
+                        addErrorResult("Expected '{' after WhetherDo condition");
+                        skipToNextStatement();
+                    }
                 } else {
-                    addErrorResult("Expected ')'");
+                    addErrorResult("Expected ')' in WhetherDo statement");
+                    skipToNextStatement();
                 }
             } else {
-                addErrorResult("Expected '('");
+                addErrorResult("Expected '(' in WhetherDo statement");
+                skipToNextStatement();
             }
         } else {
-            addErrorResult("Expected 'WhetherDo'");
+            addErrorResult("Expected 'WhetherDo' for WhetherDo statement");
+            skipToNextStatement();
         }
     }
-
     // 21. ConditionExpression → Condition | Condition ConditionOp Condition
     private void conditionExpression() {
         condition();
@@ -448,13 +541,13 @@ public class Parser {
 
     // 22. ConditionOp → and | or
     private void conditionOp() {
-        if (currentToken.getText().equals("&&") || currentToken.getText().equals("||")) {
+        if (currentToken.getText().equals("and") || currentToken.getText().equals("or")) {
             advance(); // Consume the operator
+            addMatchResult("ConditionOp");
         } else {
-            addErrorResult("Expected condition operator ('&&' or '||')");
+            addErrorResult("Expected condition operator ('and' or 'or')");
         }
     }
-
     // 23. Condition → Expression ComparisonOp Expression
     private void condition() {
         expression();
@@ -568,7 +661,6 @@ public class Parser {
             term();
         }
     }
-
     // 30. AddOp → + | -
     private void addOp() {
         if (currentToken.getText().equals("+") || currentToken.getText().equals("-")) {
@@ -587,7 +679,7 @@ public class Parser {
             factor();
         }
     }
-
+    
     // 32. MulOp → * | /
     private void mulOp() {
         if (currentToken.getText().equals("*") || currentToken.getText().equals("/")) {
@@ -599,10 +691,37 @@ public class Parser {
 
     // 33. Factor → ID | Number
     private void factor() {
-        if (currentToken.getType().equals("Identifier") || currentToken.getType().equals("Constant")) {
-            advance(); // Consume ID or Number
+        if (currentToken.getType().equals("Identifier")) {
+            int savedTokenIndex = currentTokenIndex;
+            Token savedToken = currentToken;
+            advance(); // Consume ID
+            if (currentTokenIndex < tokens.size() && currentToken.getText().equals("(")) {
+                // It's a function call
+                currentTokenIndex = savedTokenIndex;
+                currentToken = savedToken;
+                funcCall();
+            } else {
+                // It's just an identifier
+                currentTokenIndex = savedTokenIndex;
+                currentToken = savedToken;
+                advance(); // Consume ID
+                addMatchResult("Factor");
+            }
+        } else if (currentToken.getType().equals("Constant")) {
+            advance(); // Consume Number or string literal
+            addMatchResult("Factor");
+        } else if (currentToken.getText().equals("(")) {
+            advance(); // Consume '('
+            expression();
+            if (matchText(")")) {
+                addMatchResult("Factor");
+            } else {
+                addErrorResult("Expected ')' in expression");
+                skipToNextStatement();
+            }
         } else {
-            addErrorResult("Expected identifier or constant");
+            addErrorResult("Expected identifier, constant, or '(' in expression");
+            skipToNextStatement();
         }
     }
 

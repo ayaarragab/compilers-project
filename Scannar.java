@@ -4,7 +4,7 @@ import java.util.List;
 public class Scannar {
 
     List<Token> tokens = new ArrayList<>();
-    FileHandling fileHandling = new FileHandling("C:/test/test.txt");
+    FileHandling fileHandling = new FileHandling("test.txt");
     private boolean inMultilineComment = false;
     int totalErrors = 0;
 
@@ -29,9 +29,12 @@ public class Scannar {
     }
 
     private boolean isConstant(String word) {
-        if (word.matches("[0-9]+")) return true;
-        if (word.matches("'[A-Za-z]'")) return true;
-        if (word.matches("\".*\"")) return true;
+        if (word.matches("[0-9]+"))
+            return true;
+        if (word.matches("'[A-Za-z]'"))
+            return true;
+        if (word.matches("\".*\""))
+            return true;
         for (String keyword : keywords) {
             if (word.equals(keyword)) {
                 return true;
@@ -49,20 +52,21 @@ public class Scannar {
         return Keyword.isKeyword(word);
     }
 
-    private void saveToken(String text, String dataType, int lineNumber , int state) {
-        tokens.add(new Token(text, dataType, lineNumber , state));
+    private void saveToken(String text, String dataType, int lineNumber, int state) {
+        tokens.add(new Token(text, dataType, lineNumber, state));
     }
-
 
     public void scanTokens() {
         fileHandling.openFile();
 
         for (int lineNumber = 1; lineNumber <= fileHandling.countLines(); lineNumber++) {
             String line = fileHandling.readFile();
-            if (line == null) continue;
+            if (line == null)
+                continue;
 
             line = preprocessLine(line);
-            if (line == null || line.trim().isEmpty()) continue;
+            if (line == null || line.trim().isEmpty())
+                continue;
 
             processLine(line, lineNumber);
         }
@@ -76,7 +80,7 @@ public class Scannar {
         for (Token token : tokens) {
             System.out.println(token);
         }
-        System.out.printf("Total NO of errors: %d",totalErrors);
+        System.out.printf("Total NO of errors: %d", totalErrors);
     }
 
     private void processLine(String line, int lineNumber) {
@@ -96,10 +100,10 @@ public class Scannar {
         }
     }
 
-
     private String preprocessLine(String line) {
         line = line.trim();
-        if (line.isEmpty()) return null;
+        if (line.isEmpty())
+            return null;
 
         if (inMultilineComment) {
             if (line.contains("##/")) {
@@ -129,17 +133,14 @@ public class Scannar {
         return line.trim();
     }
 
-
     private List<String> tokenizeLine(String line) {
         List<String> tokens = new ArrayList<>();
         StringBuilder current = new StringBuilder();
 
-
-
         for (int i = 0; i < line.length(); i++) {
             char ch = line.charAt(i);
 
-            if (Character.isLetterOrDigit(ch) || ch == '_' || ch == '–' || ch == '"' || ch == '\'' || ch == '/'  ) {
+            if (Character.isLetterOrDigit(ch) || ch == '_' || ch == '–' || ch == '"' || ch == '\'' || ch == '/') {
                 current.append(ch);
             } else {
                 if (current.length() > 0) {
@@ -149,7 +150,8 @@ public class Scannar {
 
                 if (!Character.isWhitespace(ch)) {
                     // Check for multi-character operators like ==, >=, etc.
-                    if ((ch == '=' || ch == '!' || ch == '<' || ch == '>') && i + 1 < line.length() && line.charAt(i + 1) == '=') {
+                    if ((ch == '=' || ch == '!' || ch == '<' || ch == '>') && i + 1 < line.length()
+                            && line.charAt(i + 1) == '=') {
                         tokens.add("" + ch + "=");
                         i++;
                     } else if ((ch == '&' || ch == '|') && i + 1 < line.length() && line.charAt(i + 1) == ch) {
@@ -168,9 +170,5 @@ public class Scannar {
 
         return tokens;
     }
-
-
-
-
 
 }

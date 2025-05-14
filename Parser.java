@@ -1,5 +1,8 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 
 public class Parser {
     private List<Token> tokens;
@@ -54,11 +57,7 @@ public class Parser {
 
     // Check if the current token matches the expected type
     private boolean match(String type) {
-        if (currentToken.getType().equals(type)) {
-            advance();
-            return true;
-        }
-        return false;
+        return currentToken.getType().equals(type);
     }
 
     // Check if the current token matches the expected text
@@ -75,28 +74,33 @@ public class Parser {
     private void program() {
         if (matchText("Program")) {
             addMatchResult("Program");
-            boolean isClass = classDeclarationList();
-            if (isClass) {
-                if (matchText("End")) {
-                    addMatchResult("End");
-                } else {
-                    addErrorResult("Expected 'End' statement");
-                }
+            
+            // Handle UsingCommand if present
+            while (currentTokenIndex < tokens.size() && currentToken.getText().equals("Using")) {
+                usingCommand();
+            }
+            
+            // Process class declarations
+            classDeclarationList();
+            
+            if (matchText("End")) {
+                addMatchResult("End");
             } else {
-                
+                addErrorResult("Expected 'End' statement");
             }
         } else {
             addErrorResult("Expected 'Program' statement");
         }
     }
+    
     // 2. ClassDeclarationList → ClassDeclaration ClassDeclarationList | ε
-    private boolean classDeclarationList() {
+    private void classDeclarationList() {
         while (currentTokenIndex < tokens.size() && currentToken.getText().equals("Division")) {
             classDeclaration();
         }
-        return false;
         // ε case - do nothing if no more Division tokens
     }
+    
     // 3. ClassDeclaration → Division ID { ClassImplementation }
     //                        | Division ID InferredFrom { ClassImplementation }
     private void classDeclaration() {
@@ -169,7 +173,7 @@ public class Parser {
             }
         } else if (currentToken.getText().equals("/##") || currentToken.getText().equals("/-")) {
             comment();
-        } else if (currentToken.getText().equals("using")) {
+        } else if (currentToken.getText().equals("Using")) {
             usingCommand();
         } else if (currentToken.getType().equals("Identifier")) {
             // Could be a FuncCall
@@ -191,6 +195,7 @@ public class Parser {
             advance(); // Skip to avoid infinite loop
         }
     }
+    
     // 6. MethodDeclaration → FuncDecl ; | FuncDecl { VarDeclaration Statements }
     private void methodDeclaration() {
         int savedTokenIndex = currentTokenIndex;
@@ -217,6 +222,7 @@ public class Parser {
             addErrorResult("Invalid method declaration");
         }
     }
+    
     // 7. FuncDecl → Type ID ( ParameterList )
     private boolean funcDecl() {
         if (isType(currentToken.getText())) {
@@ -242,6 +248,7 @@ public class Parser {
         }
         return false;
     }
+    
     // 8. Type → Ire | Sire | Clo | SetOfClo | FBU | SFBU | None | Logical
     private boolean isType(String text) {
         return text.equals("Ire") || text.equals("Sire") || text.equals("Clo") || 
@@ -446,6 +453,7 @@ public class Parser {
             advance(); // Consume semicolon
         }
     }
+    
     // 16. FuncCall → ID ( ArgumentList ) ;    
     private void funcCall() {
         if (currentToken.getType().equals("Identifier")) {
@@ -467,6 +475,7 @@ public class Parser {
             skipToNextStatement();
         }
     }
+    
     // 17. ArgumentList → ε | NonEmptyArgumentList
     private void argumentList() {
         if (currentTokenIndex < tokens.size() && !currentToken.getText().equals(")")) {
@@ -478,8 +487,8 @@ public class Parser {
         }
         // ε case - do nothing if empty
     }
-    // 18. NonEmptyArgumentList → Expression | NonEmptyArgumentList , Expression
     
+    // 18. NonEmptyArgumentList → Expression | NonEmptyArgumentList , Expression
     private void nonEmptyArgumentList() {
         expression();
         if (currentTokenIndex < tokens.size() && currentToken.getText().equals(",")) {
@@ -507,7 +516,7 @@ public class Parser {
         if (currentToken.getText().equals("WhetherDo")) {
             advance(); // Consume 'WhetherDo'
             if (matchText("(")) {
-                condition();
+                conditionExpression();
                 if (matchText(")")) {
                     if (matchText("{")) {
                         statements();
@@ -534,11 +543,12 @@ public class Parser {
             skipToNextStatement();
         }
     }
+    
     // 21. ConditionExpression → Condition | Condition ConditionOp Condition
     private void conditionExpression() {
         condition();
         if (currentTokenIndex < tokens.size() && 
-            (currentToken.getText().equals("&&") || currentToken.getText().equals("||"))) {
+            (currentToken.getText().equals("and") || currentToken.getText().equals("or"))) {
             conditionOp();
             condition();
         }
@@ -553,6 +563,7 @@ public class Parser {
             addErrorResult("Expected condition operator ('and' or 'or')");
         }
     }
+    
     // 23. Condition → Expression ComparisonOp Expression
     private void condition() {
         expression();
@@ -666,6 +677,7 @@ public class Parser {
             term();
         }
     }
+    
     // 30. AddOp → + | -
     private void addOp() {
         if (currentToken.getText().equals("+") || currentToken.getText().equals("-")) {
@@ -707,9 +719,6 @@ public class Parser {
                 funcCall();
             } else {
                 // It's just an identifier
-                currentTokenIndex = savedTokenIndex;
-                currentToken = savedToken;
-                advance(); // Consume ID
                 addMatchResult("Factor");
             }
         } else if (currentToken.getType().equals("Constant")) {
@@ -755,34 +764,49 @@ public class Parser {
         }
     }
 
-    // 35. UsingCommand → using ( FName.txt ) ;
+    // 35. UsingCommand → using ( FName.txt ) ;  
     private void usingCommand() {
-        if (matchText("using")) {
-            if (matchText("(")) {
-                fName();
-                if (matchText(")")) {
-                    if (matchText(";")) {
-                        // Using command successfully parsed
-                    } else {
-                        addErrorResult("Expected ';'");
-                    }
-                } else {
-                    addErrorResult("Expected ')'");
-                }
-            } else {
-                addErrorResult("Expected '('");
-            }
-        } else {
-            addErrorResult("Expected 'using'");
-        }
+        if (matchText("Using")) { 
+            addMatchResult("UsingCommand");
+            if (matchText("(")) {  
+                fName();  
+                if (matchText(")")) {  
+                    if (matchText(";")) {  
+                        // UsingCommand successfully parsed
+                    } else {  
+                        addErrorResult("Expected ';'");  
+                    }  
+                } else {  
+                    addErrorResult("Expected ')'");  
+                }  
+            } else {  
+                addErrorResult("Expected '('");  
+            }  
+        } else {  
+            addErrorResult("Expected 'Using'");  
+        }  
     }
 
-    // 36. FName → STR
-    private void fName() {
-        if (currentToken.getType().equals("Identifier") || currentToken.getType().equals("Constant")) {
-            advance(); // Consume filename
-        } else {
-            addErrorResult("Expected filename");
+    // 36. FName → STR  
+    private void fName() {  
+        if (currentToken.getType().equals("Identifier") || currentToken.getType().equals("Constant")) {  
+            addMatchResult("FName");
+            String fileName = currentToken.getText();
+            FileHandling testFile = new FileHandling(fileName);
+            System.out.println("file" + fileName);
+            boolean exists = Files.exists(Paths.get(fileName));
+            if (exists) {
+                Scannar scannar = new Scannar(testFile);
+                scannar.scanTokens();
+                List<Token> tokens = scannar.getTokens();
+                Parser parser = new Parser(tokens);
+                parser.parse();
+            } else {
+                addErrorResult("File does not exist.");
+            }
+        } else {  
+            addErrorResult("Expected filename");  
         }
+        advance(); 
     }
 }

@@ -1,0 +1,148 @@
+- Correct token:
+  Line #: 1
+  Token Text: Program
+  Token Type: Stat
+- Correct token:
+  Line #: 2
+  Token Text: Using
+  Token Type: Inclusion
+- Correct token:
+  Line #: 2
+  Token Text: (
+  Token Type: Braces
+- Correct token:
+  Line #: 2
+  Token Text: math_utils
+  Token Type: Identifier
+- Correct token:
+  Line #: 2
+  Token Text: .
+  Token Type: Dot ACCESS
+- Correct token:
+  Line #: 2
+  Token Text: txt
+  Token Type: Identifier
+- Correct token:
+  Line #: 2
+  Token Text: )
+  Token Type: Braces
+- Correct token:
+  Line #: 2
+  Token Text: ;
+  Token Type: SEMICOLON
+- Correct token:
+  Line #: 3
+  Token Text: Division
+  Token Type: Class
+- Correct token:
+  Line #: 3
+  Token Text: MainProgram
+  Token Type: Identifier
+- Correct token:
+  Line #: 3
+  Token Text: {
+  Token Type: Braces
+- Correct token:
+  Line #: 4
+  Token Text: None
+  Token Type: Void
+- Correct token:
+  Line #: 4
+  Token Text: main
+  Token Type: Identifier
+- Correct token:
+  Line #: 4
+  Token Text: (
+  Token Type: Braces
+- Correct token:
+  Line #: 4
+  Token Text: )
+  Token Type: Braces
+- Correct token:
+  Line #: 4
+  Token Text: {
+  Token Type: Braces
+- Correct token:
+  Line #: 5
+  Token Text: Ire
+  Token Type: Identifier
+- Correct token:
+  Line #: 5
+  Token Text: x
+  Token Type: Identifier
+- Correct token:
+  Line #: 5
+  Token Text: =
+  Token Type: Assignment operator
+- Correct token:
+  Line #: 5
+  Token Text: 5
+  Token Type: Constant
+- Correct token:
+  Line #: 5
+  Token Text: ;
+  Token Type: SEMICOLON
+- Correct token:
+  Line #: 6
+  Token Text: Ire
+  Token Type: Identifier
+- Correct token:
+  Line #: 6
+  Token Text: y
+  Token Type: Identifier
+- Correct token:
+  Line #: 6
+  Token Text: =
+  Token Type: Assignment operator
+- Correct token:
+  Line #: 6
+  Token Text: square
+  Token Type: Identifier
+- Correct token:
+  Line #: 6
+  Token Text: (
+  Token Type: Braces
+- Correct token:
+  Line #: 6
+  Token Text: x
+  Token Type: Identifier
+- Correct token:
+  Line #: 6
+  Token Text: )
+  Token Type: Braces
+- Correct token:
+  Line #: 6
+  Token Text: ;
+  Token Type: SEMICOLON
+- Correct token:
+  Line #: 7
+  Token Text: write
+  Token Type: Identifier
+- Correct token:
+  Line #: 7
+  Token Text: (
+  Token Type: Braces
+- Correct token:
+  Line #: 7
+  Token Text: y
+  Token Type: Identifier
+- Correct token:
+  Line #: 7
+  Token Text: )
+  Token Type: Braces
+- Correct token:
+  Line #: 7
+  Token Text: ;
+  Token Type: SEMICOLON
+- Correct token:
+  Line #: 8
+  Token Text: }
+  Token Type: Braces
+- Correct token:
+  Line #: 9
+  Token Text: }
+  Token Type: Braces
+- Correct token:
+  Line #: 10
+  Token Text: End
+  Token Type: End

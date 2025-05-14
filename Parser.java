@@ -75,21 +75,26 @@ public class Parser {
     private void program() {
         if (matchText("Program")) {
             addMatchResult("Program");
-            classDeclarationList();
-            if (matchText("End")) {
-                addMatchResult("End");
+            boolean isClass = classDeclarationList();
+            if (isClass) {
+                if (matchText("End")) {
+                    addMatchResult("End");
+                } else {
+                    addErrorResult("Expected 'End' statement");
+                }
             } else {
-                addErrorResult("Expected 'End' statement");
+                
             }
         } else {
             addErrorResult("Expected 'Program' statement");
         }
     }
     // 2. ClassDeclarationList → ClassDeclaration ClassDeclarationList | ε
-    private void classDeclarationList() {
+    private boolean classDeclarationList() {
         while (currentTokenIndex < tokens.size() && currentToken.getText().equals("Division")) {
             classDeclaration();
         }
+        return false;
         // ε case - do nothing if no more Division tokens
     }
     // 3. ClassDeclaration → Division ID { ClassImplementation }

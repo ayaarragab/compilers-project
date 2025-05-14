@@ -1,0 +1,15 @@
+Program
+Division Nested {
+    None main() {
+        Ire x = 10;
+        RotateWhen (x > 0) {
+            WhetherDo (x == 5) {
+                Continuewhen (Ire i = 0; i < 3; i = i + 1) {
+                    write("Nested loop");
+                }
+            }
+            x = x - 1;
+        }
+    }
+}
+End

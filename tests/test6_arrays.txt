@@ -1,0 +1,16 @@
+Program
+Division ArrayTest {
+    None main() {
+        Ilap numbers[5];
+        numbers[0] = 1;
+        numbers[1] = 2;
+        Logical flags[3];
+        flags[0] = true;
+        Ire i = 0;
+        RotateWhen (i < 5) {
+            write(numbers[i]);
+            i = i + 1;
+        }
+    }
+}
+End

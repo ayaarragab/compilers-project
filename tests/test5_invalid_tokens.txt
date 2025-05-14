@@ -1,0 +1,10 @@
+Program
+Division Invalid {
+    UnknownType x; /- Invalid type
+    Ire y = 10;
+    y = y @ 2; /- Invalid operator
+    None main() {
+        write("Test");
+    }
+}
+End

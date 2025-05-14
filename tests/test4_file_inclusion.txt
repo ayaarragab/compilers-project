@@ -1,0 +1,10 @@
+Program
+Using (math_utils.txt);
+Division MainProgram {
+    None main() {
+        Ire x = 5;
+        Ire y = square(x); /- Assume square is defined in math_utils.txt
+        write(y);
+    }
+}
+End

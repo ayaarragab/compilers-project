@@ -4,10 +4,13 @@ import java.util.List;
 public class Scannar {
 
     List<Token> tokens = new ArrayList<>();
-    FileHandling fileHandling = new FileHandling("test.txt");
+    private FileHandling testFile;
     private boolean inMultilineComment = false;
     int totalErrors = 0;
 
+    public Scannar(FileHandling testFile) {
+        this.testFile = testFile;
+    }
     public List<Token> getTokens() {
         return tokens;
     }
@@ -57,10 +60,10 @@ public class Scannar {
     }
 
     public void scanTokens() {
-        fileHandling.openFile();
+        testFile.openFile();
 
-        for (int lineNumber = 1; lineNumber <= fileHandling.countLines(); lineNumber++) {
-            String line = fileHandling.readFile();
+        for (int lineNumber = 1; lineNumber <= testFile.countLines(); lineNumber++) {
+            String line = testFile.readFile();
             if (line == null)
                 continue;
 
@@ -73,7 +76,7 @@ public class Scannar {
 
         printTokens();
 
-        fileHandling.closeFile();
+        testFile.closeFile();
     }
 
     private void printTokens() {

@@ -1,0 +1,19 @@
+Program
+Division MathOperations {
+    Ire factorial(Ire n) {
+        WhetherDo (n <= 1) {
+            Replywith 1;
+        }
+        Replywith n * factorial(n - 1);
+    }
+    
+    None main() {
+        Ire num;
+        write("Enter a number: ");
+        read(num);
+        Ire result = factorial(num);
+        write("Factorial: ");
+        write(result);
+    }
+}
+End

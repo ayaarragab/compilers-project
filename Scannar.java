@@ -20,7 +20,7 @@ public class Scannar {
     };
 
     private boolean isIdentifier(String word) {
-        if (word.matches("[A-Za-z_][A-Za-z0-9_]*")) {
+        if (word.matches("[A-Za-z_][A-Za-z0-9_-]*") || (word.matches("[A-Za-z_][A-Za-z0-9_.-]*") && word.contains("."))) {
             for (String keyword : keywords) {
                 if (word.equals(keyword)) {
                     return false;
@@ -140,10 +140,18 @@ public class Scannar {
         List<String> tokens = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         boolean inString = false;
-    
+        boolean inUsingFilename = false; // Track if we're parsing a filename after Using
+
         for (int i = 0; i < line.length(); i++) {
             char ch = line.charAt(i);
-    
+
+            // Check if we should start parsing a filename (after "Using (")
+            if (!tokens.isEmpty() && tokens.get(tokens.size() - 1).equals("Using")) {
+                inUsingFilename = true;
+            } else if (inUsingFilename && ch == ')') {
+                inUsingFilename = false; // End filename parsing at closing parenthesis
+            }
+
             if (ch == '"' && !inString) {
                 inString = true;
                 current.append(ch);
@@ -154,6 +162,9 @@ public class Scannar {
                 current.setLength(0);
             } else if (inString) {
                 current.append(ch);
+            } else if (inUsingFilename && (Character.isLetterOrDigit(ch) || ch == '_' || ch == '.')) {
+                // Allow letters, digits, underscores, and periods for filenames
+                current.append(ch);
             } else if (Character.isLetterOrDigit(ch) || ch == '_' || ch == '–' || ch == '/') {
                 current.append(ch);
             } else {
@@ -161,7 +172,7 @@ public class Scannar {
                     tokens.add(current.toString());
                     current.setLength(0);
                 }
-    
+
                 if (!Character.isWhitespace(ch)) {
                     // Check for multi-character operators like ==, >=, etc.
                     if ((ch == '=' || ch == '!' || ch == '<' || ch == '>') && i + 1 < line.length()
@@ -177,11 +188,11 @@ public class Scannar {
                 }
             }
         }
-    
+
         if (current.length() > 0) {
             tokens.add(current.toString());
         }
-    
+
         return tokens;
     }
 }

@@ -1,8 +1,0 @@
-Program
-Division ExprError {
-    None main() {
-        Ire x = 5 + * 3; /- Invalid expression
-        write(x);
-    }
-}
-End

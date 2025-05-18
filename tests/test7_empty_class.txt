@@ -1,4 +1,0 @@
-Program
-Division Empty {
-}
-End

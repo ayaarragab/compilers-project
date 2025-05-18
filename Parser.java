@@ -147,82 +147,124 @@ public class Parser {
     }
 
     // 5. ClassItem → VarDeclaration | MethodDeclaration | Comment | UsingCommand | FuncCall
-    private void classItem() {
-        if (isType(currentToken.getText())) {
-            // Could be VarDeclaration or MethodDeclaration
-            int savedTokenIndex = currentTokenIndex;
-            Token savedToken = currentToken;
-            advance(); // Consume type
-            if (currentToken.getType().equals("Identifier")) {
-                advance(); // Consume ID
-                if (currentToken.getText().equals("(")) {
-                    // It's a MethodDeclaration
-                    currentTokenIndex = savedTokenIndex;
-                    currentToken = savedToken;
-                    methodDeclaration();
-                } else {
-                    // It's a VarDeclaration
-                    currentTokenIndex = savedTokenIndex;
-                    currentToken = savedToken;
-                    varDeclaration();
-                }
-            } else {
-                currentTokenIndex = savedTokenIndex;
-                currentToken = savedToken;
-                addErrorResult("Expected identifier after type");
-            }
-        } else if (currentToken.getText().equals("/##") || currentToken.getText().equals("/-")) {
-            comment();
-        } else if (currentToken.getText().equals("Using")) {
-            usingCommand();
-        } else if (currentToken.getType().equals("Identifier")) {
-            // Could be a FuncCall
-            int savedTokenIndex = currentTokenIndex;
-            Token savedToken = currentToken;
-            advance(); // Consume ID
-            if (currentToken.getText().equals("(")) {
-                currentTokenIndex = savedTokenIndex;
-                currentToken = savedToken;
-                funcCall();
-            } else {
-                currentTokenIndex = savedTokenIndex;
-                currentToken = savedToken;
-                addErrorResult("Invalid class item");
-                advance(); // Skip to avoid infinite loop
-            }
-        } else {
-            addErrorResult("Invalid class item");
-            advance(); // Skip to avoid infinite loop
-        }
-    }
-    
+private void classItem() {  
+    if (isType(currentToken.getText())) {  
+        varDeclaration();  
+    } else if (currentToken.getText().equals("/##") || currentToken.getText().equals("/-")) {  
+        comment();  
+    } else if (currentToken.getText().equals("using")) {  
+        usingCommand();  
+    } else if (currentToken.getType().equals("Identifier")) {  
+        // Check if this could be a method declaration with an invalid type  
+        int savedTokenIndex = currentTokenIndex;  
+        Token savedToken = currentToken;  
+          
+        String invalidType = currentToken.getText();  
+        advance(); // Consume potential type  
+          
+        if (currentTokenIndex < tokens.size() &&   
+            currentToken.getType().equals("Identifier")) {  
+              
+            Token methodName = currentToken;  
+            advance(); // Consume method name  
+              
+            if (currentTokenIndex < tokens.size() &&   
+                currentToken.getText().equals("(")) {  
+                  
+                // This looks like a method declaration with an invalid type  
+                // Reset position and call modified methodDeclaration  
+                currentTokenIndex = savedTokenIndex;  
+                currentToken = savedToken;  
+                  
+                // Report the error for invalid type  
+                addErrorResult("'" + invalidType + "' is not a valid Type");  
+                  
+                // Skip the invalid type token  
+                advance();  
+                  
+                // Continue parsing as if it were a valid method  
+                if (currentToken.getType().equals("Identifier")) {  
+                    advance(); // Consume method name  
+                    if (matchText("(")) {  
+                        parameterList();  
+                        if (matchText(")")) {  
+                            if (matchText("{")) {  
+                                varDeclaration();  
+                                statements();  
+                                if (matchText("}")) {  
+                                    addMatchResult("MethodDeclaration");  
+                                } else {  
+                                    addErrorResult("Expected '}'");  
+                                }  
+                            } else {  
+                                addErrorResult("Expected '{' after method declaration");  
+                            }  
+                        } else {  
+                            addErrorResult("Expected ')'");  
+                        }  
+                    } else {  
+                        addErrorResult("Expected '('");  
+                    }  
+                } else {  
+                    addErrorResult("Expected identifier");  
+                }  
+            } else {  
+                // Reset for funcCall  
+                currentTokenIndex = savedTokenIndex;  
+                currentToken = savedToken;  
+                funcCall();  
+            }  
+        } else {  
+            // Reset for funcCall  
+            currentTokenIndex = savedTokenIndex;  
+            currentToken = savedToken;  
+            funcCall();  
+        }  
+    } else {  
+        addErrorResult("Invalid class item");  
+        advance(); // Skip current token to avoid infinite loop  
+    }  
+} 
     // 6. MethodDeclaration → FuncDecl ; | FuncDecl { VarDeclaration Statements }
-    private void methodDeclaration() {
-        int savedTokenIndex = currentTokenIndex;
-        Token savedToken = currentToken;
-    
-        if (funcDecl()) {
-            if (matchText(";")) {
-                addMatchResult("MethodDeclaration");
-            } else if (matchText("{")) {
-                varDeclaration(); // Optional variable declarations
-                statements(); // Statements inside the block
-                if (matchText("}")) {
-                    addMatchResult("MethodDeclaration");
-                } else {
-                    addErrorResult("Expected '}' after method body");
-                }
-            } else {
-                addErrorResult("Expected ';' or '{' after function declaration");
-            }
-        } else {
-            // Reset token index if funcDecl fails to avoid consuming incorrect tokens
-            currentTokenIndex = savedTokenIndex;
-            currentToken = savedToken;
-            addErrorResult("Invalid method declaration");
-        }
-    }
-    
+private void methodDeclaration() {  
+    // Check if it's a valid type  
+    boolean validType = isType(currentToken.getText());  
+      
+    if (!validType) {  
+        // Report the error but continue parsing  
+        addErrorResult("'" + currentToken.getText() + "' is not a valid Type");  
+        advance(); // Consume the invalid type  
+    } else {  
+        advance(); // Consume the valid type  
+    }  
+      
+    // Continue parsing the method declaration  
+    if (currentToken.getType().equals("Identifier")) {  
+        advance(); // Consume ID  
+        if (matchText("(")) {  
+            parameterList();  
+            if (matchText(")")) {  
+                if (matchText("{")) {  
+                    varDeclaration();  
+                    statements();  
+                    if (matchText("}")) {  
+                        addMatchResult("MethodDeclaration");  
+                    } else {  
+                        addErrorResult("Expected '}'");  
+                    }  
+                } else {  
+                    addErrorResult("Expected '{' or ';' after function declaration");  
+                }  
+            } else {  
+                addErrorResult("Expected ')'");  
+            }  
+        } else {  
+            addErrorResult("Expected '('");  
+        }  
+    } else {  
+        addErrorResult("Expected identifier");  
+    }  
+} 
     // 7. FuncDecl → Type ID ( ParameterList )
     private boolean funcDecl() {
         if (isType(currentToken.getText())) {

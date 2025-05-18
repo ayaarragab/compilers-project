@@ -1,6 +1,0 @@
-Program
-Division NoEnd {
-    None main() {
-        write("Missing End");
-    }
-}
